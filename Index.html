@@ -3,12 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Điểm Khảo Sát</title>
+    <title>Tra Điểm Khảo Sát</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 30px auto; padding: 20px; color: #333; background: #f4f7f6; }
         .container { background: #fff; padding: 25px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
         h2 { text-align: center; color: #2c3e50; font-size: 24px;}
+        #status { text-align: center; font-weight: bold; margin-bottom: 15px; padding: 10px; border-radius: 6px; }
         .search-box { display: flex; gap: 10px; margin-bottom: 20px; }
         input { flex: 1; padding: 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 16px; outline: none; }
         input:focus { border-color: #3498db; }
@@ -19,14 +20,18 @@
         .diff { font-weight: bold; }
         .diff.up { color: #27ae60; }
         .diff.down { color: #e74c3c; }
+        .diff.flat { color: #f39c12; }
         .combo { margin-top: 15px; padding-top: 15px; border-top: 1px dashed #ccc; font-weight: bold; color: #2980b9;}
     </style>
 </head>
 <body>
     <div class="container">
-        <h2>Điểm khảo sát 3 đợt của sở và trường</h2>
+        <h2>Điểm Khảo Sát 3 Đợt</h2>
+        
+        <div id="status" style="background:#fff3cd; color:#856404;">⏳ Đang kiểm tra dữ liệu...</div>
+        
         <div class="search-box">
-            <input type="text" id="nameInput" placeholder="Nhập tên học sinh để tìm...">
+            <input type="text" id="nameInput" placeholder="Nhập họ tên (VD: Đinh Thành Đức)...">
             <button onclick="traCuu()">Tra cứu</button>
         </div>
         <div id="result" class="result-card"></div>
@@ -34,8 +39,8 @@
 
     <script>
         let dataSo1 = [], dataTruongText = "", dataSo2 = [];
+        let isDataReady = false;
 
-        // Tự động tải 3 file CSV trên GitHub khi mở web
         async function loadData() {
             try {
                 const [resSo1, resTruong, resSo2] = await Promise.all([
@@ -44,14 +49,20 @@
                     fetch('so2.csv')
                 ]);
                 
-                const textSo1 = await resSo1.text();
-                dataTruongText = await resTruong.text();
-                const textSo2 = await resSo2.text();
+                if (!resSo1.ok || !resTruong.ok || !resSo2.ok) throw new Error("File missing");
 
-                dataSo1 = Papa.parse(textSo1, {header: true}).data;
-                dataSo2 = Papa.parse(textSo2, {header: true}).data;
+                dataSo1 = Papa.parse(await resSo1.text(), {header: true, skipEmptyLines: true}).data;
+                dataTruongText = await resTruong.text();
+                dataSo2 = Papa.parse(await resSo2.text(), {header: true, skipEmptyLines: true}).data;
+                
+                document.getElementById('status').innerHTML = "✅ Tải dữ liệu thành công! Có thể tra cứu.";
+                document.getElementById('status').style.background = "#d4edda";
+                document.getElementById('status').style.color = "#155724";
+                isDataReady = true;
             } catch (e) {
-                console.log("Lỗi tải dữ liệu. Hãy đảm bảo 3 file csv đã được up lên cùng thư mục.");
+                document.getElementById('status').innerHTML = "⚠️ Lỗi: Không đọc được dữ liệu.<br>Chỉ tra cứu được khi đã up file lên GitHub Pages!";
+                document.getElementById('status').style.background = "#f8d7da";
+                document.getElementById('status').style.color = "#721c24";
             }
         }
 
@@ -65,21 +76,22 @@
                    (parseFloat(student['Điểm Tổ hợp môn thứ 2']) || 0);
         }
 
-        // Tính tổng 4 môn đợt trường (quét các cột điểm trong file)
         function timDiemTruong(name) {
+            if (!dataTruongText) return 0;
             const lines = dataTruongText.split('\n');
+            let maxScore = 0;
             for (let l of lines) {
-                if (l.toLowerCase().includes(name.toLowerCase())) {
-                    const parts = l.split(',');
+                if (l.toLowerCase().includes(name)) {
+                    const parts = l.split(/[,;]/); // Hỗ trợ cả dấu phẩy và chấm phẩy
                     let sum = 0;
                     for (let i = 6; i <= 20; i++) {
                         let val = parseFloat(parts[i]);
                         if (!isNaN(val)) sum += val;
                     }
-                    return sum;
+                    if (sum > maxScore) maxScore = sum;
                 }
             }
-            return 0;
+            return maxScore;
         }
 
         function goiYToHop(student) {
@@ -90,10 +102,15 @@
             else if (note.includes('lịch sử') || note.includes('địa lí')) tohop = "C00, C04 hoặc D01";
             else tohop = "D01 hoặc các khối xét tuyển kết hợp";
             
-            return `Tổ hợp môn phù hợp: ${tohop} (Nên tập trung mạnh Toán, Anh và bài thi Tư duy nếu muốn chốt Hệ thống thông tin quản lý nhé).`;
+            return `Tổ hợp phù hợp: ${tohop} (Nên cày mạnh Toán, Anh và thi TSA để chốt Hệ thống thông tin quản lý nhé).`;
         }
 
         function traCuu() {
+            if (!isDataReady) {
+                alert("Ông phải đưa trang này lên GitHub cùng 3 file CSV thì web mới đọc được dữ liệu nhé!");
+                return;
+            }
+
             const name = document.getElementById('nameInput').value.trim().toLowerCase();
             const resultDiv = document.getElementById('result');
             if (!name) return;
@@ -102,9 +119,10 @@
             const hsSo2 = dataSo2.find(r => r['Họ và tên'] && r['Họ và tên'].toLowerCase() === name);
             const tongTruong = timDiemTruong(name);
 
+            // Xử lý báo lỗi nếu không tìm thấy ai
             if (!hsSo1 && !hsSo2 && tongTruong === 0) {
                 resultDiv.style.display = "block";
-                resultDiv.innerHTML = `<span class="highlight">Không tìm thấy dữ liệu! Hãy kiểm tra lại tên.</span>`;
+                resultDiv.innerHTML = `<span class="highlight">Không tìm thấy "${name.toUpperCase()}"! Hãy nhập chính xác họ và tên có dấu.</span>`;
                 return;
             }
 
@@ -114,16 +132,20 @@
             const cl1 = tongTruong - tongSo1;
             const cl2 = tongSo2 - tongTruong;
 
-            const formatCL = (val) => val > 0 ? `<span class="diff up">tăng ${val.toFixed(2)} điểm</span>` : `<span class="diff down">giảm ${Math.abs(val).toFixed(2)} điểm</span>`;
+            const formatCL = (val) => {
+                if (val > 0) return `<span class="diff up">tăng ${val.toFixed(2)} điểm</span>`;
+                if (val < 0) return `<span class="diff down">giảm ${Math.abs(val).toFixed(2)} điểm</span>`;
+                return `<span class="diff flat">giữ nguyên</span>`;
+            };
 
             resultDiv.style.display = "block";
             resultDiv.innerHTML = `
                 <h3>KẾT QUẢ: <span style="color:#2c3e50">${hsSo2 ? hsSo2['Họ và tên'] : (hsSo1 ? hsSo1['Họ và tên'] : name.toUpperCase())}</span></h3>
                 <p><b>1. Đợt Sở 1:</b> Tổng 4 môn: ${tongSo1 > 0 ? tongSo1.toFixed(2) : 'Không thi'}</p>
                 <p><b>2. Đợt Trường:</b> Tổng 4 môn: ${tongTruong > 0 ? tongTruong.toFixed(2) : 'Không thi'} 
-                   <br><i>(Chênh lệch so với đợt Sở 1: ${formatCL(cl1)})</i></p>
+                   <br><i>(Chênh lệch so với đợt Sở 1: ${tongTruong > 0 && tongSo1 > 0 ? formatCL(cl1) : '—'})</i></p>
                 <p><b>3. Đợt Sở 2:</b> Tổng 4 môn: ${tongSo2 > 0 ? tongSo2.toFixed(2) : 'Không thi'} 
-                   <br><i>(Chênh lệch so với đợt Trường: ${formatCL(cl2)})</i></p>
+                   <br><i>(Chênh lệch so với đợt Trường: ${tongSo2 > 0 && tongTruong > 0 ? formatCL(cl2) : '—'})</i></p>
                 <div class="combo">
                     💡 ${goiYToHop(hsSo2 || hsSo1)}
                 </div>
