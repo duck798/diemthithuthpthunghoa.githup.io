@@ -3,154 +3,399 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tra Điểm Khảo Sát</title>
+    <title>Tra Điểm Khảo Sát 3 Đợt</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 30px auto; padding: 20px; color: #333; background: #f4f7f6; }
-        .container { background: #fff; padding: 25px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
-        h2 { text-align: center; color: #2c3e50; font-size: 24px;}
-        #status { text-align: center; font-weight: bold; margin-bottom: 15px; padding: 10px; border-radius: 6px; }
-        .search-box { display: flex; gap: 10px; margin-bottom: 20px; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 900px; margin: 0 auto; padding: 20px; color: #333; background: #f4f7f6; }
+        .container { background: #fff; padding: 30px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+        h1 { text-align: center; color: #2c3e50; font-size: 28px; margin-bottom: 10px; }
+        h2 { text-align: center; color: #34495e; font-size: 20px; margin-bottom: 20px; }
+        h3 { color: #2c3e50; margin-top: 20px; margin-bottom: 10px; font-size: 18px; }
+        
+        #status { text-align: center; font-weight: bold; margin-bottom: 20px; padding: 12px; border-radius: 6px; }
+        
+        .school-selector { display: flex; gap: 15px; margin-bottom: 20px; justify-content: center; }
+        .school-btn { padding: 10px 20px; border: 2px solid #3498db; background: white; color: #3498db; border-radius: 6px; cursor: pointer; font-weight: bold; transition: 0.3s; }
+        .school-btn.active { background: #3498db; color: white; }
+        .school-btn:hover { transform: translateY(-2px); box-shadow: 0 2px 8px rgba(52,152,219,0.3); }
+        
+        .search-box { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
+        .search-row { display: flex; gap: 10px; }
         input { flex: 1; padding: 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 16px; outline: none; }
-        input:focus { border-color: #3498db; }
-        button { padding: 12px 20px; background-color: #3498db; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; transition: 0.2s;}
-        button:hover { background-color: #2980b9; }
-        .result-card { background: #f8f9fa; padding: 20px; border-radius: 8px; border-left: 5px solid #3498db; margin-top: 15px; line-height: 1.8; display: none; }
-        .highlight { font-weight: bold; color: #e74c3c; }
-        .diff { font-weight: bold; }
-        .diff.up { color: #27ae60; }
-        .diff.down { color: #e74c3c; }
-        .diff.flat { color: #f39c12; }
-        .combo { margin-top: 15px; padding-top: 15px; border-top: 1px dashed #ccc; font-weight: bold; color: #2980b9;}
+        input:focus { border-color: #3498db; box-shadow: 0 0 5px rgba(52,152,219,0.3); }
+        button { padding: 12px 25px; background-color: #3498db; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; transition: 0.3s; }
+        button:hover { background-color: #2980b9; transform: translateY(-2px); }
+        
+        .result-card { background: #f8f9fa; padding: 25px; border-radius: 8px; border-left: 5px solid #3498db; margin-top: 20px; line-height: 1.8; display: none; }
+        .result-card.show { display: block; animation: slideIn 0.3s ease; }
+        @keyframes slideIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        .student-name { font-size: 22px; font-weight: bold; color: #2c3e50; margin-bottom: 15px; }
+        .student-info { background: #ecf0f1; padding: 10px; border-radius: 5px; margin-bottom: 15px; font-size: 14px; }
+        
+        .score-section { margin-bottom: 20px; padding-bottom: 15px; border-bottom: 2px solid #ecf0f1; }
+        .score-section:last-child { border-bottom: none; }
+        .round-title { font-weight: bold; color: #2980b9; font-size: 16px; margin-bottom: 10px; }
+        .subject-scores { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+        .subject-item { background: white; padding: 10px; border-radius: 5px; border-left: 3px solid #3498db; }
+        .subject-name { font-weight: bold; color: #34495e; font-size: 14px; }
+        .subject-score { color: #e74c3c; font-size: 18px; font-weight: bold; }
+        .total-score { background: #d5f4e6; padding: 12px; border-radius: 5px; font-weight: bold; color: #27ae60; font-size: 16px; }
+        .no-score { color: #95a5a6; font-style: italic; }
+        
+        .comparison { background: #fff3cd; padding: 12px; border-radius: 5px; margin-top: 8px; font-size: 14px; }
+        .up { color: #27ae60; font-weight: bold; }
+        .down { color: #e74c3c; font-weight: bold; }
+        .flat { color: #f39c12; font-weight: bold; }
+        
+        .analysis-section { background: #e8f4f8; padding: 15px; border-radius: 6px; margin-top: 20px; }
+        .analysis-title { font-weight: bold; color: #2980b9; margin-bottom: 10px; }
+        
+        .recommendations { margin-top: 20px; padding: 15px; background: #f0f9ff; border-radius: 6px; }
+        .rec-title { font-weight: bold; color: #2980b9; margin-bottom: 10px; }
+        .rec-item { margin-bottom: 12px; padding: 10px; background: white; border-left: 3px solid #3498db; border-radius: 3px; }
+        .university-list { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 10px; }
+        .uni-item { padding: 10px; background: white; border: 1px solid #3498db; border-radius: 5px; font-size: 14px; }
+        .uni-name { font-weight: bold; color: #2980b9; }
+        .uni-major { color: #555; font-size: 13px; }
+        
+        .highlight { color: #e74c3c; font-weight: bold; }
+        .error-message { color: #c0392b; padding: 12px; background: #fadbd8; border-radius: 5px; border-left: 4px solid #c0392b; }
+        
+        @media (max-width: 600px) {
+            .container { padding: 20px; }
+            .school-selector { flex-direction: column; }
+            .search-row { flex-direction: column; }
+            .subject-scores { grid-template-columns: 1fr; }
+            .university-list { grid-template-columns: 1fr; }
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <h2>Điểm Khảo Sát 3 Đợt</h2>
+        <h1>📊 Tra Cứu Điểm Khảo Sát</h1>
+        <h2>3 Đợt (Sở 1 - Trường - Sở 2)</h2>
         
         <div id="status" style="background:#fff3cd; color:#856404;">⏳ Đang kiểm tra dữ liệu...</div>
         
-        <div class="search-box">
-            <input type="text" id="nameInput" placeholder="Nhập họ tên (VD: Đinh Thành Đức)...">
-            <button onclick="traCuu()">Tra cứu</button>
+        <div class="school-selector">
+            <button class="school-btn active" onclick="selectSchool('hunghoa')">🏫 THPT Hưng Hóa</button>
+            <button class="school-btn" onclick="selectSchool('tamnong')">🏫 THPT Tam Nông</button>
         </div>
+        
+        <div class="search-box">
+            <div class="search-row">
+                <input type="text" id="nameInput" placeholder="Nhập họ tên học sinh (VD: Đinh Thành Đức)...">
+            </div>
+            <div class="search-row">
+                <input type="text" id="dobInput" placeholder="Nhập ngày sinh (VD: 01/01/2007 hoặc 2007-01-01)...">
+                <button onclick="traCuu()">🔍 Tra cứu</button>
+            </div>
+        </div>
+        
         <div id="result" class="result-card"></div>
     </div>
 
     <script>
-        let dataSo1 = [], dataTruongText = "", dataSo2 = [];
+        let allData = { hunghoa: {}, tamnong: {} };
         let isDataReady = false;
+        let currentSchool = 'hunghoa';
 
         async function loadData() {
             try {
-                const [resSo1, resTruong, resSo2] = await Promise.all([
-                    fetch('so1.csv'),
-                    fetch('truong.csv'),
-                    fetch('so2.csv')
+                // Load THPT Hưng Hóa data
+                const [hh_so1, hh_truong, hh_so2] = await Promise.all([
+                    fetch('hunghoa_so1.csv'),
+                    fetch('hunghoa_truong.csv'),
+                    fetch('hunghoa_so2.csv')
                 ]);
                 
-                if (!resSo1.ok || !resTruong.ok || !resSo2.ok) throw new Error("File missing");
+                // Load THPT Tam Nông data
+                const [tn_so1, tn_truong, tn_so2_hunghoa, tn_so2_tamnong] = await Promise.all([
+                    fetch('tamnong_so1.csv'),
+                    fetch('tamnong_truong.csv'),
+                    fetch('tamnong_so2_hunghoa.csv'),
+                    fetch('tamnong_so2_tamnong.csv')
+                ]);
 
-                dataSo1 = Papa.parse(await resSo1.text(), {header: true, skipEmptyLines: true}).data;
-                dataTruongText = await resTruong.text();
-                dataSo2 = Papa.parse(await resSo2.text(), {header: true, skipEmptyLines: true}).data;
-                
-                document.getElementById('status').innerHTML = "✅ Tải dữ liệu thành công! Có thể tra cứu.";
-                document.getElementById('status').style.background = "#d4edda";
-                document.getElementById('status').style.color = "#155724";
+                if (!hh_so1.ok || !hh_truong.ok || !hh_so2.ok) throw new Error("Hưng Hóa files missing");
+                if (!tn_so1.ok || !tn_truong.ok || !tn_so2_tamnong.ok) throw new Error("Tam Nông files missing");
+
+                // Parse Hưng Hóa data
+                allData.hunghoa.so1 = Papa.parse(await hh_so1.text(), {header: true, skipEmptyLines: true}).data;
+                allData.hunghoa.truong = Papa.parse(await hh_truong.text(), {header: true, skipEmptyLines: true}).data;
+                allData.hunghoa.so2 = Papa.parse(await hh_so2.text(), {header: true, skipEmptyLines: true}).data;
+
+                // Parse Tam Nông data
+                allData.tamnong.so1 = Papa.parse(await tn_so1.text(), {header: true, skipEmptyLines: true}).data;
+                allData.tamnong.truong = Papa.parse(await tn_truong.text(), {header: true, skipEmptyLines: true}).data;
+                allData.tamnong.so2 = Papa.parse(await tn_so2_tamnong.text(), {header: true, skipEmptyLines: true}).data;
+
+                updateStatus("✅ Tải dữ liệu thành công! Có thể tra cứu.", "#d4edda", "#155724");
                 isDataReady = true;
             } catch (e) {
-                document.getElementById('status').innerHTML = "⚠️ Lỗi: Không đọc được dữ liệu.<br>Chỉ tra cứu được khi đã up file lên GitHub Pages!";
-                document.getElementById('status').style.background = "#f8d7da";
-                document.getElementById('status').style.color = "#721c24";
+                console.error(e);
+                updateStatus("⚠️ Lỗi: Không đọc được dữ liệu.<br>Đảm bảo tất cả file CSV đã được upload!", "#f8d7da", "#721c24");
             }
         }
 
-        loadData();
-
-        function tinhTongSo(student) {
-            if (!student) return 0;
-            return (parseFloat(student['Điểm Toán']) || 0) + 
-                   (parseFloat(student['Điểm Ngữ văn']) || 0) + 
-                   (parseFloat(student['Điểm Tổ hợp môn thứ 1']) || 0) + 
-                   (parseFloat(student['Điểm Tổ hợp môn thứ 2']) || 0);
+        function updateStatus(msg, bg, color) {
+            const statusDiv = document.getElementById('status');
+            statusDiv.innerHTML = msg;
+            statusDiv.style.background = bg;
+            statusDiv.style.color = color;
         }
 
-        function timDiemTruong(name) {
-            if (!dataTruongText) return 0;
-            const lines = dataTruongText.split('\n');
-            let maxScore = 0;
-            for (let l of lines) {
-                if (l.toLowerCase().includes(name)) {
-                    const parts = l.split(/[,;]/); // Hỗ trợ cả dấu phẩy và chấm phẩy
-                    let sum = 0;
-                    for (let i = 6; i <= 20; i++) {
-                        let val = parseFloat(parts[i]);
-                        if (!isNaN(val)) sum += val;
-                    }
-                    if (sum > maxScore) maxScore = sum;
-                }
-            }
-            return maxScore;
+        function selectSchool(school) {
+            currentSchool = school;
+            document.querySelectorAll('.school-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            document.getElementById('result').innerHTML = '';
         }
 
-        function goiYToHop(student) {
-            if (!student) return "Tập trung ôn luyện thi Đánh giá tư duy nhé!";
-            const note = (student['Ghi chú'] || '').toLowerCase();
-            let tohop = "";
-            if (note.includes('vật lí') || note.includes('hóa học')) tohop = "A00, A01 hoặc B00";
-            else if (note.includes('lịch sử') || note.includes('địa lí')) tohop = "C00, C04 hoặc D01";
-            else tohop = "D01 hoặc các khối xét tuyển kết hợp";
+        function normalizeName(name) {
+            return name.trim().toLowerCase();
+        }
+
+        function parseDOB(dobStr) {
+            if (!dobStr) return null;
+            dobStr = dobStr.trim();
+            let parts;
+            if (dobStr.includes('/')) parts = dobStr.split('/');
+            else if (dobStr.includes('-')) parts = dobStr.split('-');
+            else return null;
             
-            return `Tổ hợp phù hợp: ${tohop} (Nên cày mạnh Toán, Anh và thi TSA để chốt Hệ thống thông tin quản lý nhé).`;
+            if (parts.length !== 3) return null;
+            return parts.map(p => p.padStart(2, '0')).join('/');
+        }
+
+        function normalizeDate(dateStr) {
+            if (!dateStr) return null;
+            dateStr = dateStr.trim();
+            let parts;
+            if (dateStr.includes('/')) {
+                parts = dateStr.split('/');
+                if (parts.length === 3) return [parts[2], parts[1], parts[0]].join('-');
+            } else if (dateStr.includes('-')) {
+                parts = dateStr.split('-');
+                if (parts.length === 3) return [parts[2], parts[1], parts[0]].join('/');
+            }
+            return dateStr;
+        }
+
+        function getSubjectsFromStudent(student) {
+            if (!student) return [];
+            const subjects = [];
+            const keys = Object.keys(student);
+            keys.forEach(key => {
+                if (key.includes('Điểm') && student[key] && student[key].toString().trim() !== '') {
+                    const score = parseFloat(student[key]);
+                    if (!isNaN(score)) {
+                        subjects.push({ name: key.replace('Điểm ', ''), score: score });
+                    }
+                }
+            });
+            return subjects;
+        }
+
+        function findStudent(name, dob) {
+            const school = allData[currentSchool];
+            const normalizedName = normalizeName(name);
+            const parsedDOB = parseDOB(dob);
+
+            for (let source of [school.so1, school.truong, school.so2]) {
+                const match = source.find(r => {
+                    if (!r['Họ và tên']) return false;
+                    if (normalizeName(r['Họ và tên']) !== normalizedName) return false;
+                    if (parsedDOB) {
+                        const rowDOB = normalizeDate(r['Ngày sinh'] || r['Năm sinh'] || '');
+                        if (rowDOB && !rowDOB.includes(parsedDOB.split('/')[0])) return false;
+                    }
+                    return true;
+                });
+                if (match) return match;
+            }
+            return null;
+        }
+
+        function calculateTotalScore(subjects) {
+            return subjects.reduce((sum, s) => sum + s.score, 0);
+        }
+
+        function getUniversityRecommendations(totalScore) {
+            const recommendations = {
+                high: [
+                    { name: 'ĐH Quốc Tế - ĐHQG Hà Nội', majors: 'Kinh tế, CNTT, Quốc tế học' },
+                    { name: 'ĐH Bách Khoa Hà Nội', majors: 'Kỹ thuật, Công nghệ thông tin' },
+                    { name: 'ĐH Kinh Tế Quốc Dân', majors: 'Kinh tế, Quản lý, Tài chính' },
+                    { name: 'ĐH Ngoại Thương', majors: 'Quốc tế, Kinh doanh, Ngoại ngữ' },
+                    { name: 'ĐH Hà Nội (Công nghệ)', majors: 'Công nghệ thông tin, Toán ứng dụng' },
+                    { name: 'ĐH Giao Thông Vận Tải', majors: 'Kỹ thuật giao thông, Logistics' }
+                ],
+                mid: [
+                    { name: 'ĐH Sư Phạm Hà Nội', majors: 'Sư phạm, Giáo dục, Khoa học' },
+                    { name: 'ĐH Xây Dựng', majors: 'Xây dựng, Kiến trúc, Quy hoạch' },
+                    { name: 'ĐH Ngoại Ngữ - ĐHQG Hà Nội', majors: 'Ngoại ngữ, Dịch thuật' },
+                    { name: 'ĐH Thương Mại', majors: 'Kinh doanh, Hành chính, Quản lý' },
+                    { name: 'ĐH Khoa Học Tự Nhiên - ĐHQG', majors: 'Khoa học, Toán, Hóa' },
+                    { name: 'ĐH Công Nghiệp Hà Nội', majors: 'Kỹ thuật, Công nghiệp' }
+                ],
+                basic: [
+                    { name: 'ĐH Hà Nội', majors: 'Đa ngành, Quản lý hành chính' },
+                    { name: 'ĐH Kinh Tế - Kỹ Thuật Bắc Ninh', majors: 'Kỹ thuật, Kinh tế' },
+                    { name: 'ĐH Sư Phạm Kỹ Thuật', majors: 'Sư phạm kỹ thuật' },
+                    { name: 'ĐH Công Nghiệp TP.HCM', majors: 'Công nghiệp, Kỹ thuật' },
+                    { name: 'ĐH Nông Lâm TP.HCM', majors: 'Nông lâm, Môi trường' },
+                    { name: 'ĐH Tài Chính - Marketing', majors: 'Tài chính, Marketing, Bán hàng' }
+                ]
+            };
+
+            if (totalScore >= 24) return recommendations.high;
+            if (totalScore >= 18) return recommendations.mid;
+            return recommendations.basic;
+        }
+
+        function getCareerGuidance(subjects, totalScore) {
+            const scoreAvg = totalScore / subjects.length;
+            let guidance = '';
+
+            const mathSubject = subjects.find(s => s.name.includes('Toán'));
+            const langSubject = subjects.find(s => s.name.includes('Ngữ văn'));
+            const combinedSubjects = subjects.filter(s => s.name.includes('Tổ hợp'));
+
+            if (mathSubject && mathSubject.score >= 7.5) {
+                guidance += '💪 Điểm Toán mạnh - Nên xét khối STEM (A00, A01, B00, D01).\n';
+            }
+            if (langSubject && langSubject.score >= 7.5) {
+                guidance += '📚 Điểm Ngữ văn tốt - Có thể xét khối nhân văn (C00, D01).\n';
+            }
+            if (totalScore >= 24) {
+                guidance += '🏆 Xem xét các đại học top như Bách Khoa, Ngoại thương, Kinh tế quốc dân.\n';
+            } else if (totalScore >= 18) {
+                guidance += '⭐ Có cơ hội vào các đại học trực thuộc với mức điểm trung bình.\n';
+            } else {
+                guidance += '📖 Tập trung ôn luyện, chuẩn bị thêm cho kỳ thi tiếp theo.\n';
+            }
+
+            return guidance.trim();
+        }
+
+        function formatScoreChange(oldScore, newScore) {
+            if (oldScore === 0 || newScore === 0) return '—';
+            const diff = newScore - oldScore;
+            if (Math.abs(diff) < 0.01) return `<span class="flat">giữ nguyên</span>`;
+            if (diff > 0) return `<span class="up">↑ tăng ${diff.toFixed(2)} điểm</span>`;
+            return `<span class="down">↓ giảm ${Math.abs(diff).toFixed(2)} điểm</span>`;
         }
 
         function traCuu() {
             if (!isDataReady) {
-                alert("Ông phải đưa trang này lên GitHub cùng 3 file CSV thì web mới đọc được dữ liệu nhé!");
+                alert("Dữ liệu chưa sẵn sàng! Vui lòng kiểm tra kết nối mạng.");
                 return;
             }
 
-            const name = document.getElementById('nameInput').value.trim().toLowerCase();
+            const name = document.getElementById('nameInput').value.trim();
+            const dob = document.getElementById('dobInput').value.trim();
             const resultDiv = document.getElementById('result');
-            if (!name) return;
 
-            const hsSo1 = dataSo1.find(r => r['Họ và tên'] && r['Họ và tên'].toLowerCase() === name);
-            const hsSo2 = dataSo2.find(r => r['Họ và tên'] && r['Họ và tên'].toLowerCase() === name);
-            const tongTruong = timDiemTruong(name);
-
-            // Xử lý báo lỗi nếu không tìm thấy ai
-            if (!hsSo1 && !hsSo2 && tongTruong === 0) {
-                resultDiv.style.display = "block";
-                resultDiv.innerHTML = `<span class="highlight">Không tìm thấy "${name.toUpperCase()}"! Hãy nhập chính xác họ và tên có dấu.</span>`;
+            if (!name) {
+                resultDiv.classList.add('show');
+                resultDiv.innerHTML = '<div class="error-message">⚠️ Vui lòng nhập họ tên học sinh!</div>';
                 return;
             }
 
-            const tongSo1 = tinhTongSo(hsSo1);
-            const tongSo2 = tinhTongSo(hsSo2);
+            const school = allData[currentSchool];
+            const student_so1 = findStudent(name, dob) || school.so1.find(r => normalizeName(r['Họ và tên'] || '') === normalizeName(name));
+            const student_truong = school.truong.find(r => normalizeName(r['Họ và tên'] || '') === normalizeName(name));
+            const student_so2 = school.so2.find(r => normalizeName(r['Họ và tên'] || '') === normalizeName(name));
 
-            const cl1 = tongTruong - tongSo1;
-            const cl2 = tongSo2 - tongTruong;
+            if (!student_so1 && !student_truong && !student_so2) {
+                resultDiv.classList.add('show');
+                resultDiv.innerHTML = `<div class="error-message">❌ Không tìm thấy học sinh "<strong>${name}</strong>"${dob ? ` sinh ${dob}` : ''}! Vui lòng kiểm tra lại họ tên và ngày sinh.</div>`;
+                return;
+            }
 
-            const formatCL = (val) => {
-                if (val > 0) return `<span class="diff up">tăng ${val.toFixed(2)} điểm</span>`;
-                if (val < 0) return `<span class="diff down">giảm ${Math.abs(val).toFixed(2)} điểm</span>`;
-                return `<span class="diff flat">giữ nguyên</span>`;
-            };
+            const subjects_so1 = getSubjectsFromStudent(student_so1);
+            const subjects_truong = getSubjectsFromStudent(student_truong);
+            const subjects_so2 = getSubjectsFromStudent(student_so2);
 
-            resultDiv.style.display = "block";
-            resultDiv.innerHTML = `
-                <h3>KẾT QUẢ: <span style="color:#2c3e50">${hsSo2 ? hsSo2['Họ và tên'] : (hsSo1 ? hsSo1['Họ và tên'] : name.toUpperCase())}</span></h3>
-                <p><b>1. Đợt Sở 1:</b> Tổng 4 môn: ${tongSo1 > 0 ? tongSo1.toFixed(2) : 'Không thi'}</p>
-                <p><b>2. Đợt Trường:</b> Tổng 4 môn: ${tongTruong > 0 ? tongTruong.toFixed(2) : 'Không thi'} 
-                   <br><i>(Chênh lệch so với đợt Sở 1: ${tongTruong > 0 && tongSo1 > 0 ? formatCL(cl1) : '—'})</i></p>
-                <p><b>3. Đợt Sở 2:</b> Tổng 4 môn: ${tongSo2 > 0 ? tongSo2.toFixed(2) : 'Không thi'} 
-                   <br><i>(Chênh lệch so với đợt Trường: ${tongSo2 > 0 && tongTruong > 0 ? formatCL(cl2) : '—'})</i></p>
-                <div class="combo">
-                    💡 ${goiYToHop(hsSo2 || hsSo1)}
-                </div>
-            `;
+            const total_so1 = calculateTotalScore(subjects_so1);
+            const total_truong = calculateTotalScore(subjects_truong);
+            const total_so2 = calculateTotalScore(subjects_so2);
+
+            const displayName = (student_so2 || student_truong || student_so1)['Họ và tên'] || name.toUpperCase();
+            const displayDOB = (student_so2 || student_truong || student_so1)['Ngày sinh'] || (student_so2 || student_truong || student_so1)['Năm sinh'] || '';
+
+            let html = `<div class="student-name">👤 ${displayName}</div>`;
+            if (displayDOB) html += `<div class="student-info">📅 Ngày sinh: ${displayDOB}</div>`;
+
+            // Sở đợt 1
+            html += `<div class="score-section">
+                <div class="round-title">📋 Đợt Sở 1 (Khảo sát lần đầu)</div>
+                <div class="subject-scores">`;
+            if (subjects_so1.length > 0) {
+                subjects_so1.forEach(s => html += `<div class="subject-item"><div class="subject-name">${s.name}</div><div class="subject-score">${s.score.toFixed(2)}</div></div>`);
+                html += `</div><div class="total-score">📊 Tổng điểm: ${total_so1.toFixed(2)}</div>`;
+            } else {
+                html += `</div><div class="no-score">Không có dữ liệu</div>`;
+            }
+            html += `</div>`;
+
+            // Đợt Trường
+            html += `<div class="score-section">
+                <div class="round-title">🏫 Đợt Trường (Khảo sát lần hai)</div>
+                <div class="subject-scores">`;
+            if (subjects_truong.length > 0) {
+                subjects_truong.forEach(s => html += `<div class="subject-item"><div class="subject-name">${s.name}</div><div class="subject-score">${s.score.toFixed(2)}</div></div>`);
+                html += `</div><div class="total-score">📊 Tổng điểm: ${total_truong.toFixed(2)}</div>`;
+                if (total_so1 > 0) {
+                    html += `<div class="comparison">So với Sở 1: ${formatScoreChange(total_so1, total_truong)}</div>`;
+                }
+            } else {
+                html += `</div><div class="no-score">Không có dữ liệu</div>`;
+            }
+            html += `</div>`;
+
+            // Sở đợt 2
+            html += `<div class="score-section">
+                <div class="round-title">📋 Đợt Sở 2 (Khảo sát lần ba)</div>
+                <div class="subject-scores">`;
+            if (subjects_so2.length > 0) {
+                subjects_so2.forEach(s => html += `<div class="subject-item"><div class="subject-name">${s.name}</div><div class="subject-score">${s.score.toFixed(2)}</div></div>`);
+                html += `</div><div class="total-score">📊 Tổng điểm: ${total_so2.toFixed(2)}</div>`;
+                if (total_truong > 0) {
+                    html += `<div class="comparison">So với Trường: ${formatScoreChange(total_truong, total_so2)}</div>`;
+                }
+            } else {
+                html += `</div><div class="no-score">Không có dữ liệu</div>`;
+            }
+            html += `</div>`;
+
+            // Phân tích
+            const allSubjects = [...subjects_so1, ...subjects_truong, ...subjects_so2];
+            const latestTotal = total_so2 || total_truong || total_so1;
+            const guidance = getCareerGuidance(subjects_so2.length > 0 ? subjects_so2 : (subjects_truong.length > 0 ? subjects_truong : subjects_so1), latestTotal);
+            const unis = getUniversityRecommendations(latestTotal);
+
+            html += `<div class="analysis-section">
+                <div class="analysis-title">📊 Phân tích chung:</div>
+                <div>${guidance}</div>
+            </div>`;
+
+            html += `<div class="recommendations">
+                <div class="rec-title">🎓 Trường Đại Học Phù Hợp:</div>
+                <div class="university-list">`;
+            unis.slice(0, 12).forEach(uni => {
+                html += `<div class="uni-item"><div class="uni-name">${uni.name}</div><div class="uni-major">Ngành: ${uni.majors}</div></div>`;
+            });
+            html += `</div></div>`;
+
+            resultDiv.classList.add('show');
+            resultDiv.innerHTML = html;
         }
+
+        loadData();
     </script>
 </body>
 </html>
